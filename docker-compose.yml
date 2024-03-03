@@ -1,0 +1,80 @@
+version: "3"
+
+services:
+
+  db:
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_DB: joomys
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: baga11BAGI
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: "redis:7.0.5-alpine"
+    hostname: redis
+
+  joomys:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/joomys
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+
+  worker:
+    build:
+      context: .
+    hostname: worker
+    entrypoint: celery
+    command: -A joomys worker --loglevel=info
+    volumes:
+      - .:/joomys
+    links:
+      - redis
+    depends_on:
+      - joomys
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+
+  beat:
+    build:
+      context: .
+    hostname: beat
+    entrypoint: celery
+    command: -A celery_app.app beat --loglevel=info
+    volumes:
+      - .:/joomys
+    depends_on:
+      - joomys
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+
+  flower:
+    build:
+      context: .
+    hostname: flower
+    entrypoint: celery
+    command: -A celery_app.app flower
+    volumes:
+      - .:/joomys
+    links:
+      - redis
+    depends_on:
+      - redis
+    ports:
+      - "5555:5555"
+
+volumes:
+  postgres_data:

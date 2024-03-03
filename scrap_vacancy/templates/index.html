@@ -1,0 +1,25 @@
+<html data-theme="light">
+    {% include "static/headers.html" %}
+<body>
+    <div class="rounded-b-xl">
+        {% include "static/navbar.html" %}
+        <div class="xl:mx-20 mt-20 lg:mt-32">
+            {% include "static/hero.html"  %}
+        </div>
+    </div>
+    <div class="xl:mx-20">
+        {% include "top_vacancies.html" %}
+        {% include "all_vacancies.html" %}
+    </div>
+    {% include "static/footer.html" %}
+    {% include "static/cookie.html" %}
+    <script>
+    var typed = new Typed('#element', {
+        strings: ['следующую работу', 'первую работу', 'работу в IT'],
+        typeSpeed: 100,
+        backSpeed: 50,
+        loop: true
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+
+<html data-theme="light">
+    {% include "static/headers.html" %}
+<body>
+    {% include "static/navbar.html" %}
+    <div class="relative flex flex-col justify-center h-screen overflow-hidden">
+        <div class="w-full p-6 m-auto bg-white rounded-md lg:max-w-xl">
+            <h1 class="text-5xl font-bold text-gray-700 mb-4">
+                Регистрация для 
+
+                {% if user_type == 'recruiter' %}
+                    Рекрутеров
+                {% else %}
+                    Соискателей
+                {% endif %}
+            </h1>
+            <form action="{% url 'post_signup' %}" method="post" class="space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label class="label">
+                        <span class="text-base label-text">Email</span>
+                    </label>
+                    <input required name="email" type="email" placeholder="Введите Email" class="w-full input input-bordered" />
+                </div>
+                <div>
+                    <label class="label">
+                        <span class="text-base label-text">Пароль</span>
+                    </label>
+                    <input required name="password" type="password" placeholder="Введите пароль" class="w-full input input-bordered" />
+                </div>
+                <div>
+                    <input class="hidden" name="user_type" value="{% if user_type == 'recruiter' %}recruiter{% else %}user{% endif %}" />
+                </div>
+                <br/>
+                {% if error %}
+                <div class="alert alert-error">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>{{error}}</span>
+                </div>
+                {% endif %}
+                <div>
+                    <button class="btn btn-neutral btn-block">Зарегистрироваться</button>
+                </div>
+                <br/>
+                <span>Уже зарегистрированы?</span>
+                <a href="/login/" class="text-blue-600 hover:text-blue-800 hover:underline">Войти</a></span>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<html data-theme="light">
+    {% include "static/headers.html" %}
+<body>
+    {% include "static/navbar.html" %}
+
+    <div class="flex flex-col justify-center m-3 lg:m-12">
+        <div class="mx-2">
+            <a href="/" class="btn  normal-case text-xl mt-2 mb-2 bg-white">Назад</a>
+        </div>
+        <div class="card bg-base-100 shadow-xl bg-white bg-opacity-100 shadow-md">
+            <div class="card-body text-base lg:text-sm">
+                <div class="card-actions justify-end">
+                    <div class="badge badge-lg badge-success font-semibold text-lg p-2">💰 {{vacancy.salary}}</div> 
+                    <div class="badge badge-lg badge-success font-semibold text-lg p-2">🏙️ {{vacancy.city}}</div>
+                </div>
+            </br>
+              <h2 class="card-title font-bold text-3xl">{{vacancy.title}}
+              </h2>
+              <div class="badge badge-secondary text-lg p-2">{{vacancy.company}}</div>
+
+              <p><span style="white-space: pre-line">{{vacancy.description | safe}}</span></p>
+            </div>
+        </div>
+
+    </div>
+    {% include "static/footer.html" %}
+    {% include "static/cookie.html" %}
+</body>
+</html>
