@@ -1,19 +1,22 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse, HttpRequest
+from django.http import HttpResponse, HttpRequest, JsonResponse
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .forms import CompanyForm, CompanyReviewForm
 from .models import Company, CompanyReview, User, UserProfile, Vacancy, UserType
+from .serializers import CompanySerializer, CompanyReviewSerializer, UserProfileSerializer, VacancySerializer, \
+    EmployerSerializer
 from .services import CompanyService, CompanyReviewService, LoginService, get_user_profile, post_vacancy_service, \
     VacancyService, TOP_EMPLOYERS
 from .models import Company
@@ -55,7 +58,7 @@ def get_company_add(request):
         return redirect(reverse('get_companies'))
     else:
         # Для GET-запроса отображаем форму добавления компании
-        return render(request, "companies/add_new_company_form.html", {"page_title": "TechHunter - Добавить компанию"})
+        return render(request, "companies/add_new_company_form.html", {"page_title": "Joomys - Добавить компанию"})
 
 
 def post_company_add(request):
@@ -90,18 +93,19 @@ def get_company(request, id):
 # Отзыв о компании
 def review_company(request, id):
     if request.method == "POST":
-        form = CompanyReviewForm(request.POST)
-        if form.is_valid():
-            review = form.save(commit=False)
-            review.company_id = id
-            review.user = request.user
-            review.save()
-            # Отправить сообщение в Telegram о новом отзыве
-            # telegram_service.send_message_to_private_channel(f"New review for company {id}")
-            return HttpResponse("<div>Спасибо за ваш отзыв!</div>")
-    else:
-        form = CompanyReviewForm()
-    return render(request, "companies/company_review_form.html", {'form': form})
+        review_data = request.POST.dict()
+        review_data.pop('csrfmiddlewaretoken', None)
+        for key, value in review_data.items():
+            review_data[key] = int(value)
+
+        # Создаем объект CompanyReview
+        review = CompanyReview()
+        review.company = Company.objects.get(id=id)  # Получаем компанию по id
+        review.user = request.user  # Или используйте свой метод для получения пользователя
+        review.review = review_data
+        review.save()
+        return JsonResponse({"message": "Спасибо за ваш отзыв!"}, status=200)
+    return JsonResponse({"error": "Что-то пошло не так!"}, status=400)
 
 
 @require_http_methods(["GET", "POST"])
@@ -170,12 +174,12 @@ def check_user_type(user_profile, required_type):
 def dashboard_view(request):
     user_profile = UserProfile.objects.filter(user=request.user).first()
     if not user_profile or not check_user_type(user_profile, 'RECRUITER'):
-        print(f"{user_profile}")
         return redirect('/')
+    print(user_profile.user.email, "")
     context = {
         'user': request.user,
         'user_profile': user_profile,
-        'page_title': 'TechHunter - Кабинет Рекрутера'
+        'page_title': 'Joomys - Кабинет Рекрутера'
     }
     return render(request, 'dashboard/dashboard.html', context)
 
@@ -211,6 +215,12 @@ def index_view(request):
     }
     return render(request, "index.html", context)
 
+
+def logout_view(request):
+    response = redirect('/')
+    response.delete_cookie('access_token')  # Замените 'your_cookie_name' на имя вашей куки
+    logout(request)
+    return response
 
 @api_view(['POST'])
 def api_login(request):
@@ -255,10 +265,151 @@ def api_signup(request):
 
         user_profile = UserProfile.objects.create(
             user=user,
-            user_type=user_type_enum
+            user_type=user_type
         )
         user_profile.save()
 
         return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
     except Exception as e:
         return Response({'error': 'A user with that email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CompanyListView(APIView):
+    def get(self, request):
+        companies = Company.objects.all().prefetch_related('companyreview_set')
+        serializer = CompanySerializer(companies, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CompanyAddView(APIView):
+    def post(self, request):
+        name = request.data.get('name')
+        description = request.data.get('description', '')
+        headcount = request.data.get('headcount', '')
+        company_type = request.data.get('type', '')
+        industry = request.data.get('industry', '')
+        tech_stack = request.data.get('tech_stack', '')
+        logo_url = request.data.get('logo_url', '')
+        website_url = request.data.get('website_url', '')
+        reviewed_at = None  # Set default value or logic for this field
+
+        company = Company(
+            name=name,
+            description=description,
+            headcount=headcount,
+            type=company_type,
+            industry=industry,
+            tech_stack=tech_stack,
+            logo_url=logo_url,
+            website_url=website_url,
+            reviewed_at=reviewed_at,
+            created_at=timezone.now(),
+            updated_at=timezone.now()
+        )
+        company.save()
+
+        # Return a success response with the newly created company data
+        serializer = CompanySerializer(company)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class CompanyDetailView(APIView):
+    def get(self, request, id):
+        company = get_object_or_404(Company, pk=id)
+        serializer = CompanySerializer(company)
+
+        # Assuming you have logic to get user data based on authentication
+        if request.user.is_authenticated:
+            user = request.user
+        else:
+            user = None
+
+        # Assuming CompanyReviewService.get_company_review_questions() returns appropriate data
+        company_review_questions = CompanyReviewService.get_company_review_questions()
+        len_reviews, company_review_summary = CompanyReviewService.get_and_calculate_company_review(id)
+
+        response_data = {
+            "company": serializer.data,
+            "page_title": f"Профиль IT компании {company.name}",
+            "company_review_questions": company_review_questions,
+            "own_company_review": self.get_own_company_review(id, user),
+            "len_reviews": len_reviews,
+            "company_review_summary": company_review_summary,
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
+    def get_own_company_review(self, company_id, user):
+        if user:
+            own_company_review = CompanyReview.objects.filter(company_id=company_id, user_id=user.id).first()
+            return own_company_review
+        return None
+
+
+class CompanyReviewAPIView(APIView):
+    def post(self, request, id):
+        review_data = request.data
+        company = Company.objects.get(id=id).id
+        user = request.user.id
+        data = {
+            'company': company,
+            'user': user,
+            'review': review_data
+        }
+        serializer = CompanyReviewSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Спасибо за ваш отзыв!"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DashboardAPIView(APIView):
+    def get(self, request):
+        if not request.user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        user_profile = UserProfile.objects.filter(user=request.user).first()
+
+        if not user_profile or not check_user_type(user_profile, 'RECRUITER'):
+            return Response({"error": "Access denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = UserProfileSerializer(user_profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PostVacancyAPIView(APIView):
+    def post(self, request):
+        if not request.user.is_authenticated:
+            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        user_profile = get_user_profile(request.user)
+        if not user_profile or user_profile.balance < 10000:
+            return Response({"error": "Insufficient funds, please top up your balance"}, status=status.HTTP_400_BAD_REQUEST)
+        response = post_vacancy_service(request, user_profile)
+        return response
+
+
+class VacancyDetailView(APIView):
+    def get(self, request, id):
+        vacancy = get_object_or_404(Vacancy, pk=id)
+        serializer = VacancySerializer(vacancy)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class IndexAPIView(APIView):
+    def get(self, request):
+        vacancy_service = VacancyService()
+
+        all_vacancies = vacancy_service.get_all_vacancies_sorted()
+        top_vacancies_by_company = vacancy_service.get_top_vacancies_by_company(all_vacancies)
+
+        all_vacancies_serializer = VacancySerializer(all_vacancies, many=True)
+        top_vacancies_by_company_serializer = VacancySerializer(top_vacancies_by_company, many=True)
+        top_employers_serializer = EmployerSerializer(TOP_EMPLOYERS.values(), many=True)
+
+        data = {
+            "top_employers": top_employers_serializer.data,  # Assuming TOP_EMPLOYERS is defined somewhere
+            "top_vacancies_by_company": top_vacancies_by_company_serializer.data,
+            "all_vacancies": all_vacancies_serializer.data
+        }
+        return Response(data, status=status.HTTP_200_OK)

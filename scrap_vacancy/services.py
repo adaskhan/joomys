@@ -186,13 +186,13 @@ def get_user_profile(user):
 
 
 def post_vacancy_service(request, user_profile):
-    title = request.POST.get("title")
-    description = request.POST.get("description")
-    salary = request.POST.get("salary")
-    company = request.POST.get("company")
-    city = request.POST.get("city")
-    tags = request.POST.get("tags")
-    source = "techhunter.kz"
+    title = request.data.get("title")
+    description = request.data.get("description")
+    salary = request.data.get("salary")
+    company = request.data.get("company")
+    city = request.data.get("city")
+    tags = request.data.get("tags")
+    source = "joomys.kz"
 
     vacancy = Vacancy(
         title=title,
@@ -212,7 +212,7 @@ def post_vacancy_service(request, user_profile):
 
     # Здесь можно добавить код для отправки сообщения в Telegram, если это необходимо
 
-    return redirect(f'/vacancy/{vacancy.id}')
+    return redirect('vacancy_detail_api', id=vacancy.id)
 
 
 @dataclass
@@ -280,7 +280,7 @@ class VacancyService:
         # if cache.get("formatted_vacancies"):
         #     return cache.get("formatted_vacancies")
         for vacancy in vacancies:
-            if vacancy.source == "techhunter.kz":
+            if vacancy.source == "joomys.kz":
                 vacancy.title = "🔥 " + vacancy.title
             if vacancy.created_at > timezone.now() - timedelta(days=1):
                 vacancy.title = "🆕 " + vacancy.title
@@ -307,6 +307,6 @@ class VacancyService:
             return 0
 
     def calculate_promotion(self, vacancy):
-        if vacancy.source == "techhunter.kz" or vacancy.created_by:
+        if vacancy.source == "joomys.kz" or vacancy.created_by:
             return 10 ** 10
         return 0

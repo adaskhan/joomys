@@ -11,4 +11,4 @@ class CompanyForm(forms.ModelForm):
 class CompanyReviewForm(forms.ModelForm):
     class Meta:
         model = CompanyReview
-        fields = ['company', 'review']  # Предполагается, что у вас есть такие поля
+        fields = ['review']  # Предполагается, что у вас есть такие поля

@@ -18,7 +18,7 @@
         <div class="w-10 rounded-full">
             <img src="https://i.postimg.cc/vZDH6jyp/Untitled-11.png">
         </div>
-        TechHunter
+        Joomys
       </a>
       <ul class="menu !py-0 menu-horizontal text-white hover:text-white !font-semibold">
         <li>
@@ -65,7 +65,7 @@
            md:pt-0"
        >
          <li>
-          <a href="https://t.me/techhunterkz" target="_blank" class="btn btn-ghost normal-case lg:text-base text-gray-100 font-base">Новые вакансии каждый день в Telegram </a>
+          <a href="https://t.me/joomyskz" target="_blank" class="btn btn-ghost normal-case lg:text-base text-gray-100 font-base">Новые вакансии каждый день в Telegram </a>
          </li>
          <li>
 
@@ -75,7 +75,8 @@
             {% endif %}
           <div class="flex flex-row items-center float-right">
             <p href="/profile" class="px-4 normal-case lg:text-base text-gray-100 font-base">{{request.state.user.email}}</p>
-            <form class="m-0" action="/logout" method="post">
+            <form class="m-0" action="/logout/" method="post">
+                {% csrf_token %}
               <button name="logout" value="upvote" class="btn btn-ghost normal-case lg:text-base text-gray-100 font-base">Выйти</button>
           </form>
           </div>

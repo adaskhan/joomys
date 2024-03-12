@@ -18,7 +18,8 @@
             <dialog id="my_modal_5" class="modal">
                 <div class="modal-box">
                     {% if request.user %}
-                        <form action="/companies/{{company.db_name}}/rate" method="post" class="space-y-4">
+                        <form action="/company/{{company.id}}/review/" method="post" class="space-y-4">
+                            {% csrf_token %}
                             <div id="company_review_questions" class="flex flex-col items-center">
                                 {% if company_review %}
                                     <div class="alert alert-success">
@@ -48,7 +49,7 @@
 
                                 {% endfor %}
                                 <div>
-                                    <button hx-swap="outerHTML" hx-target="#company_review_questions" hx-post="/company/{{company.id}}/review" class="btn btn-neutral btn-block">Оценить</button>
+                                    <button hx-swap="outerHTML" hx-target="#company_review_questions"  class="btn btn-neutral btn-block">Оценить</button>
                                 </div>
                             </div>
                         </form>

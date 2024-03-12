@@ -1,3 +1,5 @@
+{% load static %}
+
 <html data-theme="light">
     {% include "static/headers.html" %}
     <div class="navbar bg-red-600 color-white">
@@ -6,19 +8,20 @@
                 <div class="w-10 rounded-full">
                     <img src="https://i.postimg.cc/vZDH6jyp/Untitled-11.png">
                 </div>
-                TechHunter
+                Joomys
             </a>
         </div>
         <div class="flex-none">
-            <p class="font-bold normal-case text-xl text-white mx-2">{{user.email}}</p>
+                <p class="font-bold normal-case text-xl text-white mx-2">{{ user_profile.user.email }}</p>
         </div>
         <div class="flex-none">
-            <p class="font-bold normal-case text-xl text-white">Баланс: {{user.balance}} KZT</p>
+            <p class="font-bold normal-case text-xl text-white">Баланс: {{ user_profile.balance }} KZT</p>
         </div>
         <div class="flex-none">
-            <a href="https://t.me/techhuntersupport" class="btn btn-ghost normal-case text-xl text-white mx-2">Поддержка/Пополнить баланс</a>
+            <a href="https://t.me/joomyssupport" class="btn btn-ghost normal-case text-xl text-white mx-2">Поддержка/Пополнить баланс</a>
         </div>
-        <form class="m-0" action="/logout" method="post">
+        <form class="m-0" action="/logout/" method="post">
+            {% csrf_token %}
             <button name="logout" value="upvote" class="btn btn-ghost normal-case text-xl text-white mx-2">Выйти</button>
         </form>
     </div>
@@ -27,7 +30,7 @@
     <div class="relative flex flex-row justify-center overflow-hidden p-6">
         <div class="stats shadow-lg mx-2">
             <div class="stat">
-                <div class="stat-title">Посещений TechHunter в этом месяце</div>
+                <div class="stat-title">Посещений Joomys в этом месяце</div>
                 <div class="stat-value">15000+</div>
                 <div class="stat-desc">Последние 28 дней</div>
             </div>

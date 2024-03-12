@@ -42,7 +42,7 @@ class UserType(enum.Enum):
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     balance = models.IntegerField(default=0)
-    user_type = models.CharField(max_length=10, choices=[(tag.name, tag.value) for tag in UserType], default=UserType.USER)
+    user_type = models.CharField(max_length=10, choices=[(tag.name, tag.value) for tag in UserType])
     created_at = models.DateTimeField(auto_now_add=True)
 
 
@@ -58,7 +58,7 @@ class CompanyReview(models.Model):
 
 
 class Vacancy(models.Model):
-    title = models.TextField(null=False)
+    title = models.TextField()
     description = models.TextField(null=True, blank=True)
     url = models.TextField(null=True, blank=True)
     salary = models.TextField(null=True, blank=True)
@@ -78,8 +78,9 @@ class Vacancy(models.Model):
         return f"{self.company}: {self.title}"
 
 
-def extract_tags(vacancy: Vacancy):
+def extract_tags(vacancy):
     tags = []
+    print('u are here')
     tags += extract_tag_by_keywords(vacancy, ["cтажер", "trainee", "intern"], "intern")
     tags += extract_tag_by_keywords(vacancy, ["junior"], "junior")
     tags += extract_tag_by_keywords(vacancy, ["senior"], "senior")
@@ -114,11 +115,13 @@ def extract_tags(vacancy: Vacancy):
     return tags
 
 
-def extract_tag_by_keywords(vacancy: Vacancy, keywords: list[str], tag: str):
+def extract_tag_by_keywords(vacancy, keywords: list[str], tag: str):
     if check_words_in_title(vacancy.title, keywords):
         return [tag]
     return []
 
 
 def check_words_in_title(title: str, words: list[str]):
+    if title is None:
+        return False
     return any(word in title.lower() for word in words)
