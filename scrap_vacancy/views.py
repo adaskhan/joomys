@@ -10,8 +10,10 @@ from django.contrib import messages
 from django.contrib.auth.hashers import make_password
 from rest_framework import status
 from rest_framework.decorators import api_view
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .forms import CompanyForm, CompanyReviewForm
 from .models import Company, CompanyReview, User, UserProfile, Vacancy, UserType
@@ -222,18 +224,22 @@ def logout_view(request):
     logout(request)
     return response
 
-@api_view(['POST'])
-def api_login(request):
-    email = request.data.get('email')
-    password = request.data.get('password')
 
-    user = authenticate(request, username=email, password=password)
+class LoginAPIView(APIView):
+    def post(self, request):
+        email = request.data.get('email')
+        password = request.data.get('password')
 
-    if user is not None:
-        login(request, user)
-        return Response({'message': 'User authenticated successfully'})
-    else:
-        return Response({'error': 'Invalid login credentials'}, status=400)
+        user = authenticate(request, username=email, password=password)
+
+        if user is not None:
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            })
+        else:
+            return Response({'error': 'Invalid login credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 @csrf_exempt
@@ -314,6 +320,8 @@ class CompanyAddView(APIView):
 
 
 class CompanyDetailView(APIView):
+    permission_classes = [AllowAny, ]
+
     def get(self, request, id):
         company = get_object_or_404(Company, pk=id)
         serializer = CompanySerializer(company)
@@ -347,6 +355,8 @@ class CompanyDetailView(APIView):
 
 
 class CompanyReviewAPIView(APIView):
+    permission_classes = [IsAuthenticated, ]
+
     def post(self, request, id):
         review_data = request.data
         company = Company.objects.get(id=id).id
@@ -364,9 +374,9 @@ class CompanyReviewAPIView(APIView):
 
 
 class DashboardAPIView(APIView):
+    permission_classes = [IsAuthenticated, ]
+
     def get(self, request):
-        if not request.user.is_authenticated:
-            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
 
         user_profile = UserProfile.objects.filter(user=request.user).first()
 
@@ -378,6 +388,8 @@ class DashboardAPIView(APIView):
 
 
 class PostVacancyAPIView(APIView):
+    permission_classes = [IsAuthenticated, ]
+
     def post(self, request):
         if not request.user.is_authenticated:
             return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
