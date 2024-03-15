@@ -8,6 +8,7 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -226,6 +227,12 @@ def logout_view(request):
 
 
 class LoginAPIView(APIView):
+
+    @extend_schema(
+        description="Authenticate user and get JWT tokens.",
+        request={"application/json": {"example": {"email": "example@example.com", "password": "yourpassword"}}},
+        responses={200: "Success", 401: "Unauthorized"}
+    )
     def post(self, request):
         email = request.data.get('email')
         password = request.data.get('password')
@@ -244,6 +251,11 @@ class LoginAPIView(APIView):
 
 @csrf_exempt
 @api_view(['POST'])
+@extend_schema(
+    description="Register a new user.",
+    request={"application/json": {"example": {"email": "example@example.com", "password": "yourpassword", "user_type": "USER"}}},
+    responses={201: "User registered successfully", 400: "Bad request"}
+)
 def api_signup(request):
     email = request.data.get('email')
     password = request.data.get('password')
@@ -281,6 +293,11 @@ def api_signup(request):
 
 
 class CompanyListView(APIView):
+
+    @extend_schema(
+        description="Retrieve a list of companies along with their reviews.",
+        responses={200: "Success"},
+    )
     def get(self, request):
         companies = Company.objects.all().prefetch_related('companyreview_set')
         serializer = CompanySerializer(companies, many=True)
@@ -322,6 +339,10 @@ class CompanyAddView(APIView):
 class CompanyDetailView(APIView):
     permission_classes = [AllowAny, ]
 
+    @extend_schema(
+        description="Retrieve details of a specific company including its reviews.",
+        responses={200: "Success"},
+    )
     def get(self, request, id):
         company = get_object_or_404(Company, pk=id)
         serializer = CompanySerializer(company)
@@ -357,6 +378,11 @@ class CompanyDetailView(APIView):
 class CompanyReviewAPIView(APIView):
     permission_classes = [IsAuthenticated, ]
 
+    @extend_schema(
+        description="Submit a review for a specific company.",
+        request={"application/json": {"example": {"review": "Your review content"}}},
+        responses={201: "Review submitted successfully", 400: "Bad request"}
+    )
     def post(self, request, id):
         review_data = request.data
         company = Company.objects.get(id=id).id
@@ -376,6 +402,10 @@ class CompanyReviewAPIView(APIView):
 class DashboardAPIView(APIView):
     permission_classes = [IsAuthenticated, ]
 
+    @extend_schema(
+        description="Get dashboard data for recruiters.",
+        responses={200: "Success", 403: "Access denied"}
+    )
     def get(self, request):
 
         user_profile = UserProfile.objects.filter(user=request.user).first()
@@ -409,7 +439,27 @@ class VacancyDetailView(APIView):
 
 
 class IndexAPIView(APIView):
+
+    @extend_schema(
+        description="Retrieve top employers, top vacancies by company, and all vacancies sorted.",
+        responses={200: "Success"},
+    )
     def get(self, request):
+        """
+            Retrieve top employers, top vacancies by company, and all vacancies sorted.
+
+            This endpoint returns data including top employers, top vacancies by company,
+            and all vacancies sorted by some criteria.
+
+            ---
+            # Serializer Class
+            # Assuming VacancySerializer and EmployerSerializer are defined.
+
+            response_serializer:
+                top_employers: EmployerSerializer(many=True)
+                top_vacancies_by_company: VacancySerializer(many=True)
+                all_vacancies: VacancySerializer(many=True)
+        """
         vacancy_service = VacancyService()
 
         all_vacancies = vacancy_service.get_all_vacancies_sorted()

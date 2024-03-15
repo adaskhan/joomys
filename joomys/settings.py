@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'rest_framework',
     'rest_framework_simplejwt',
+    'drf_spectacular',
     # 'django-redis',
     'scrap_vacancy',
 ]
@@ -80,7 +81,8 @@ WSGI_APPLICATION = 'joomys.wsgi.application'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 # Database
@@ -195,3 +197,9 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
 }
 
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Joomys API',
+    'DESCRIPTION': 'Joomys',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
