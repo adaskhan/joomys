@@ -50,187 +50,178 @@
     </div>
 </div>
 
-<table id="{{id}}" style="width:100%">
-<thead style="display: none;">
-    <tr>
-    <th
-        class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
-    >
-        Позиция
-    </th>
-    <th
-        class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
-    >
-        Компенсация
-    </th>
-    <th
-        class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
-    >
-        Компания
-    </th>
-    <th
-        class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
-    >
-        Город
-    </th>
-    <th
-        class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
-    >
-        Теги
-    </th>
-    </tr>
-</thead>
-<tbody>
-</tbody>
-</table>
+<!--<table id="{{id}}" style="width:100%">-->
+<!--<thead style="display: none;">-->
+<!--    <tr>-->
+<!--    <th-->
+<!--        class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"-->
+<!--    >-->
+<!--        Позиция-->
+<!--    </th>-->
+<!--    <th-->
+<!--        class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"-->
+<!--    >-->
+<!--        Компенсация-->
+<!--    </th>-->
+<!--    <th-->
+<!--        class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"-->
+<!--    >-->
+<!--        Компания-->
+<!--    </th>-->
+<!--    <th-->
+<!--        class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"-->
+<!--    >-->
+<!--        Город-->
+<!--    </th>-->
+<!--    <th-->
+<!--        class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"-->
+<!--    >-->
+<!--        Теги-->
+<!--    </th>-->
+<!--    </tr>-->
+<!--</thead>-->
+<!--<tbody>-->
+<!--</tbody>-->
+<!--</table>-->
+
+<div id="vacancies-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <!-- Карточки вакансий будут здесь -->
+</div>
+<div id="pagination" class="flex justify-center space-x-1 mt-8"></div>
+
 {% endwith %}
-<script>    
-    var activeFilters{{id}} = {
-        {% if job_tag %}
-            "{{job_tag}}": true,
-        {% endif %}
-    };
+<script>
 
-    $('.filter-button-{{id}}').click(function() {
-        var filter = $(this).data('filter');
-        if (activeFilters{{id}}[filter]) {
-            delete activeFilters{{id}}[filter];
-            $(this).addClass('badge-outline');
+    const allVacancies = JSON.parse('{{ all_vacancies_json | safe }}');
+    let currentPage = 1;
+    const vacanciesPerPage = 21;
+
+function displayVacancies(page, vacanciesToShow) {
+    currentPage = page;
+    // Проверяем, определена ли переменная vacanciesToShow
+    if (!vacanciesToShow) {
+        console.error("Ошибка: переменная vacanciesToShow не определена.");
+        return;
+    }
+    const startIndex = (page - 1) * vacanciesPerPage;
+    const endIndex = page * vacanciesPerPage;
+    const paginatedVacancies = vacanciesToShow.slice(startIndex, endIndex);
+
+    const container = document.getElementById('vacancies-container');
+    container.innerHTML = paginatedVacancies.map(createCard).join('');
+
+    // Обновляем пагинацию на основе числа отфильтрованных вакансий
+    updatePagination(vacanciesToShow.length, page);
+}
+
+
+function updatePagination(totalVacancies, currentPage, allVacancies) {
+    const pageCount = Math.ceil(totalVacancies / vacanciesPerPage);
+    let paginationHTML = '';
+    // Добавляем кнопку "Предыдущий"
+        paginationHTML += `
+            <button onclick="displayVacancies(${Math.max(1, currentPage - 1)}, allVacancies)" class="border border-gray-400 bg-white text-gray-800 hover:bg-gray-200 rounded-md px-2 py-2 transition duration-300">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            </button>
+        `;
+
+        // Ограничение отображаемых номеров страниц
+        const startPage = Math.max(currentPage - 2, 1);
+        const endPage = Math.min(startPage + 4, pageCount);
+
+    // Добавляем кнопки с номерами страниц
+    for (let i = startPage; i <= endPage; i++) {
+        paginationHTML += `<button onclick="displayVacancies(${i}, allVacancies)" class="${i === currentPage ? 'bg-blue-500 text-white' : 'bg-white text-blue-500'} border border-blue-500 hover:bg-blue-500 hover:text-white rounded-md px-4 py-2 transition duration-300">${i}</button>`;
+    }
+
+    // Добавляем кнопку "Следующий"
+    if (currentPage < pageCount) {
+        paginationHTML += `
+            <button onclick="displayVacancies(${Math.min(pageCount, currentPage + 1)}, allVacancies)" class="border border-gray-400 bg-white text-gray-800 hover:bg-gray-200 rounded-md px-2 py-2 transition duration-300">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+        `;
+    }
+    document.getElementById('pagination').innerHTML = paginationHTML;
+}
+
+
+    // Функция для создания HTML карточки вакансии
+function createCard(vacancy) {
+    const fields = vacancy.fields;
+    if (!fields) return ''; // Если нет, возвращаем пустую строку
+    const tags = fields.tags ? fields.tags.split(', ') : [];
+
+    return `
+        <div class="max-w-sm w-full lg:max-w-full lg:flex mb-4 mx-4 rounded-2xl overflow-hidden shadow-lg bg-white p-4 transition ease-in-out hover:scale-105">
+            <div class="flex flex-col justify-between leading-normal">
+                <div class="mb-8">
+                    <div class="text-gray-900 font-bold text-xl mb-2">${fields.title}</div>
+                    <p class="text-gray-700 text-base">${fields.company} <span class="text-red-500">•</span> ${fields.city}</p>
+                </div>
+                <div class="flex items-center">
+                    <div class="text-sm">
+                        <p class="text-gray-900 leading-none">${fields.salary}</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    ${tags.map(tag => `<span class="inline-block bg-blue-500 rounded-full px-3 py-1 text-sm font-semibold text-white mr-2">${tag}</span>`).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+    // Функция для обновления отображения карточек с применением фильтров
+function updateCardsDisplay(filters) {
+    // Фильтрация списка вакансий в соответствии с активными фильтрами
+    const filteredVacancies = allVacancies.filter(vacancy => {
+        if (filters.length === 0) return true; // Показать все вакансии, если фильтры не выбраны
+        // Преобразование списка тегов вакансии в массив
+        const vacancyTags = vacancy.fields.tags ? vacancy.fields.tags.split(', ') : [];
+        // Вакансия должна соответствовать хотя бы одному из выбранных фильтров
+        return filters.every(filter => vacancyTags.includes(filter));
+    });
+
+    if (filteredVacancies.length === 0) {
+        // Если отфильтрованных вакансий нет, выводим сообщение
+        const container = document.getElementById('vacancies-container');
+        container.innerHTML = `
+            <div class="bg-gray-100 border border-gray-300 p-4 rounded-md">
+                <p class="text-white-600">Вакансии не найдены</p>
+            </div>
+        `;
+
+        // Очищаем пагинацию
+        document.getElementById('pagination').innerHTML = '';
+    } else {
+        // Если отфильтрованные вакансии есть, отображаем их
+        displayVacancies(1, filteredVacancies); // Первый параметр - номер страницы, второй - отфильтрованный список вакансий
+    }
+}
+
+
+    // Начальное отображение всех вакансий
+    updateCardsDisplay([]);
+
+    // Добавление обработчиков событий к кнопкам фильтров
+    let currentFilters = [];
+
+
+document.querySelectorAll('.filter-button-all_vacancies').forEach(button => {
+    button.addEventListener('click', function() {
+        const filter = this.getAttribute('data-filter');
+        if (currentFilters.includes(filter)) {
+            currentFilters = currentFilters.filter(f => f !== filter);
+            this.classList.add('badge-outline');
         } else {
-            activeFilters{{id}}[filter] = true;
-            $(this).removeClass('badge-outline');
+            currentFilters.push(filter);
+            this.classList.remove('badge-outline');
         }
-        let regex = '';
-        for (var filter in activeFilters{{id}}) {
-            filter = filter.replace('+', '\\+')
-            regex += '(?=.*'+filter+')';
-        }
-        table{{id}}.columns(4).search(regex, true, false, true).draw();
+        updateCardsDisplay(currentFilters);
     });
+});
+displayVacancies(1, allVacancies);
 
-    table{{id}} = new DataTable('#{{id}}', {
-        createdRow: function( row, data, dataIndex ) {
-            let className = 'border-2 rounded-xl border-black hover:scale-105 p-2 shadow rounded  transition'
-            if (data[6] == "joomys.kz") {
-                className += ' !bg-purple-50 overflow-hidden' ;
-            }
-            $(row).addClass(className);
-        },
-        columns: [
-            { title: 'Позиция' },
-            { title: 'Компания' },
-            { title: 'Компенсация' },
-            { title: 'Город' },
-            { title: 'Теги' }
-        ],
-        order: [],
-        data: [
-            {% for vacancy in vacancies %}
-                [
-                    "{{vacancy.title}}",
-                    "{{vacancy.company}}",
-                    "{{vacancy.salary|default:'Зарплата не указана'}}",
-                    "{{vacancy.city}}",
-                    "{{vacancy.tags}}",
-                    "{{vacancy.url}}",
-                    "{{vacancy.source}}"
-                ],
-            {% endfor %}
-        ],
-        initComplete: function(settings, json) {
-          $('.dataTables_filter').removeClass('dataTables_filter').addClass('font-semibold rounded-md');
-          $('input[aria-controls="{{id}}"]').addClass('input input-bordered lg:w-[42rem] shadow text-base p-6 font-semibold text-slate-600 mx-3').attr('id', 'tableSearch{{id}}');
-          $('.dataTables_paginate').addClass('p-6 font-bold');
-          $('.dataTables_length').remove();
-          $('.dataTables_info').addClass('p-6 font-bold');
-          $('#{{id}}_filter').addClass('flex justify-center');
-          $('#{{id}}_filter label').addClass('mb-12 flex items-center text-4xl mt-8 font-extrabold').contents().filter(function(){ return this.nodeType != 1; }).remove();
-          $('#{{id}}_filter label').prepend('🔎')
 
-        for (var filter in activeFilters{{id}}) {
-            $(`[data-filter=${filter}]`).removeClass('badge-outline');
-        }
-
-        let regex = '';
-        for (var filter in activeFilters{{id}}) {
-            filter = filter.replace('+', '\\+')
-            regex += '(?=.*'+filter+')';
-        }
-
-        table = settings.oInstance.api();
-        table.columns(4).search(regex, true, false, true).draw();
-        {% if job_tag %}
-            table.columns(3).search("(?=.*{{city_title}})", true, false, true).draw();
-        {% endif %}
-        },
-        {% with column_class='h-20 border-gray-200 text-xs lg:text-lg !pr-0 m-0' %}
-        columnDefs: [
-              {
-                  targets: 0,
-                  render:  function ( data, type, row ) {
-                      return `<a href=`+row[5]+` target='_blank'>
-                              <div class="flex w-20 md:w-full m-0">
-                                <p class="my-auto max-h-full overflow-hidden text-gray-900 font-bold">`
-                                  + data + `</p>
-                        </div></a>`;
-                  },
-                  className: '{{column_class}}' + ' rounded-l-xl'
-              },
-              {
-                  targets: [1],
-                  render:  function ( data, type, row ) {
-                      return `<div class="flex">
-                            <div class="w-20 md:w-full">
-                            <p class="text-gray-900 font-medium whitespace-no-wrap truncate">`
-                                + data +
-                            `</p>
-                            </div>
-                        </div>`;
-                  },
-                  className: '{{column_class}}'
-              },
-              {
-                  targets: [2],
-                  render:  function ( data, type, row ) {
-                      return `<div class="flex">
-                            <div class="w-15 md:w-full">
-                            <p class="text-gray-900 font-medium whitespace-no-wrap">`
-                                + data +
-                            `</p>
-                            </div>
-                        </div>`;
-                  },
-                  className: '{{column_class}}'
-              },
-              {
-                  targets: [3],
-                  render:  function ( data, type, row ) {
-                      return `<span
-                            class="relative inline-block px-1 lg:px-3 text-xs lg:text-base py-1 font-semibold text-green-900 leading-tight"
-                        >
-                            <span
-                            aria-hidden
-                            class="absolute inset-0 bg-green-200 opacity-50 rounded-full"
-                            ></span>
-                            <span class="relative">`+data +`</span>
-                        </span>`;
-                  },
-                  className: '{{column_class}}'  + ' rounded-r-xl'
-              },
-              {
-                    target: 4,
-                    visible: false
-              }
-        ]
-        {% endwith %}
-    });
-
-    var typed{{id}} = new Typed('#tableSearch{{id}}', {
-        strings: ['Junior', 'Javascript', 'Алматы'],
-        typeSpeed: 100,
-        backSpeed: 50,
-        attr: 'placeholder',
-        smartBackspace: true,
-        loop: true
-    });
   </script>

@@ -31,15 +31,11 @@ class CompanyService:
     @staticmethod
     def return_all_companies(request):
         companies = Company.objects.all().prefetch_related('companyreview_set')
-        print(companies)
         company_reviews_averaged = CompanyReviewService.get_and_calculate_all_companies_reviews_by_company()
-        print(company_reviews_averaged)
         # Сортировка компаний по количеству отзывов
         companies_sorted_by_number_of_reviews = sorted(companies,
                                                        key=lambda x: company_reviews_averaged.get(x.id, (0, 0))[0],
                                                        reverse=True)
-        print(companies_sorted_by_number_of_reviews)
-        print(companies_sorted_by_number_of_reviews[0].id)
         return render(request, "companies/all_companies.html", {
             "companies": companies_sorted_by_number_of_reviews,
             "page_title": "Все IT компании Казахстана",
@@ -186,6 +182,36 @@ def get_user_profile(user):
 
 
 def post_vacancy_service(request, user_profile):
+    title = request.POST.get("title")
+    description = request.POST.get("description")
+    salary = request.POST.get("salary")
+    company = request.POST.get("company")
+    city = request.POST.get("city")
+    tags = request.POST.get("tags")
+    source = "joomys.kz"
+
+    vacancy = Vacancy(
+        title=title,
+        description=description,
+        salary=salary,
+        company=company,
+        city=city,
+        tags=tags,
+        created_by=user_profile.user.id,
+        source=source
+    )
+    vacancy.save()
+    vacancy.url = f"/vacancy/{vacancy.id}"
+    vacancy.save()
+    user_profile.balance -= 10000
+    user_profile.save()
+
+    # Здесь можно добавить код для отправки сообщения в Telegram, если это необходимо
+
+    return redirect('vacancy_detail', id=vacancy.id)
+
+
+def post_vacancy_service_api(request, user_profile):
     title = request.data.get("title")
     description = request.data.get("description")
     salary = request.data.get("salary")

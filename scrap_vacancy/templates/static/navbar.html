@@ -1,3 +1,5 @@
+
+{% load static %}
 <header>
   <nav
      class="
@@ -68,23 +70,23 @@
 <!--          <a href="https://t.me/joomyskz" target="_blank" class="btn btn-ghost normal-case lg:text-base text-gray-100 font-base">Новые вакансии каждый день в Telegram </a>-->
 <!--         </li>-->
          <li>
-
-          {% if request.user %}
-            {% if request.user.user_type == "recruiter" %}
-              <a href="/dashboard" class="btn btn-ghost normal-case lg:text-base text-gray-100 font-base">Подать вакансию</a>
+            {% if request.user.is_authenticated %}
+                {% if request.user.userprofile.user_type == "recruiter" %}
+                    <a href="/dashboard" class="btn btn-ghost normal-case lg:text-base text-gray-100 font-base">Подать вакансию</a>
+                {% endif %}
+                <div class="flex flex-row items-center float-right">
+                    <!-- Замените <p> на <a> для создания ссылки -->
+                    <p href="/profile" class="px-4 normal-case lg:text-base text-gray-100 font-base">{{request.user.email}}</p>
+                    <form class="m-0" action="/logout/" method="post">
+                        {% csrf_token %}
+                        <button name="logout" value="upvote" class="btn btn-ghost normal-case lg:text-base text-gray-100 font-base">Выйти</button>
+                    </form>
+                </div>
+            {% else %}
+                <!-- Замените <p> на <a> для создания ссылки -->
+                <a href="/login" class="btn btn-ghost normal-case lg:text-base text-gray-100 font-base">Войти</a>
             {% endif %}
-          <div class="flex flex-row items-center float-right">
-            <p href="/profile" class="px-4 normal-case lg:text-base text-gray-100 font-base">{{request.state.user.email}}</p>
-            <form class="m-0" action="/logout/" method="post">
-                {% csrf_token %}
-              <button name="logout" value="upvote" class="btn btn-ghost normal-case lg:text-base text-gray-100 font-base">Выйти</button>
-          </form>
-          </div>
-
-          {% else %}
-            <a href="/login" class="btn btn-ghost normal-case lg:text-base text-gray-100 font-base">Войти</a>
-          {% endif %}
-          </li>
+        </li>
        </ul>
      </div>
  </nav>

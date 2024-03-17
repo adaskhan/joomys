@@ -42,7 +42,7 @@ class UserType(enum.Enum):
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     balance = models.IntegerField(default=0)
-    user_type = models.CharField(max_length=10, choices=[(tag.name, tag.value) for tag in UserType])
+    user_type = models.CharField(max_length=10)
     created_at = models.DateTimeField(auto_now_add=True)
 
 
@@ -80,7 +80,6 @@ class Vacancy(models.Model):
 
 def extract_tags(vacancy):
     tags = []
-    print('u are here')
     tags += extract_tag_by_keywords(vacancy, ["cтажер", "trainee", "intern"], "intern")
     tags += extract_tag_by_keywords(vacancy, ["junior"], "junior")
     tags += extract_tag_by_keywords(vacancy, ["senior"], "senior")

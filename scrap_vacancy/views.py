@@ -1,4 +1,8 @@
+import json
+
 from django.contrib.auth.decorators import login_required
+from django.core import serializers
+from django.core.serializers import serialize
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, HttpRequest, JsonResponse
 from django.urls import reverse
@@ -21,7 +25,7 @@ from .models import Company, CompanyReview, User, UserProfile, Vacancy, UserType
 from .serializers import CompanySerializer, CompanyReviewSerializer, UserProfileSerializer, VacancySerializer, \
     EmployerSerializer
 from .services import CompanyService, CompanyReviewService, LoginService, get_user_profile, post_vacancy_service, \
-    VacancyService, TOP_EMPLOYERS
+    VacancyService, TOP_EMPLOYERS, post_vacancy_service_api
 from .models import Company
 
 
@@ -166,7 +170,9 @@ def signup_view(request):
 
     else:
         # Для GET запроса просто отображаем форму регистрации
-        return render(request, 'signup/signup.html')
+        user_type = request.GET.get('user_type', None)
+
+        return render(request, 'signup/signup.html', context={'user_type': user_type})
 
 
 def check_user_type(user_profile, required_type):
@@ -176,9 +182,8 @@ def check_user_type(user_profile, required_type):
 @login_required
 def dashboard_view(request):
     user_profile = UserProfile.objects.filter(user=request.user).first()
-    if not user_profile or not check_user_type(user_profile, 'RECRUITER'):
+    if not user_profile or not check_user_type(user_profile, 'recruiter'):
         return redirect('/')
-    print(user_profile.user.email, "")
     context = {
         'user': request.user,
         'user_profile': user_profile,
@@ -209,12 +214,28 @@ def index_view(request):
     vacancy_service = VacancyService()
 
     all_vacancies = vacancy_service.get_all_vacancies_sorted()
-    all_vacancies = vacancy_service.format_vacancies(all_vacancies)
+    # all_vacancies = vacancy_service.format_vacancies(all_vacancies)
     top_vacancies_by_company = vacancy_service.get_top_vacancies_by_company(all_vacancies)
+
+    all_vacancies_json = serializers.serialize('json', all_vacancies, ensure_ascii=False)
+    all_vacancies_list = json.loads(all_vacancies_json)
+    for vacancy_dict in all_vacancies_list:
+        tags_str = vacancy_dict["fields"]["tags"]
+        if 'new' not in tags_str:
+            parsed_list = eval(tags_str)
+        else:
+            parsed_list = eval(tags_str[:-4])
+
+        tags_string = ", ".join(parsed_list)
+        vacancy_dict["fields"]["tags"] = tags_string
+
+    vacancy_json = json.dumps(all_vacancies_list, ensure_ascii=False)
     context = {
+        "request": request,
         "top_employers": TOP_EMPLOYERS.values(),
         "top_vacancies_by_company": top_vacancies_by_company,
-        "all_vacancies": all_vacancies
+        "all_vacancies": all_vacancies,
+        "all_vacancies_json": vacancy_json
     }
     return render(request, "index.html", context)
 
@@ -427,7 +448,7 @@ class PostVacancyAPIView(APIView):
         user_profile = get_user_profile(request.user)
         if not user_profile or user_profile.balance < 10000:
             return Response({"error": "Insufficient funds, please top up your balance"}, status=status.HTTP_400_BAD_REQUEST)
-        response = post_vacancy_service(request, user_profile)
+        response = post_vacancy_service_api(request, user_profile)
         return response
 
 
