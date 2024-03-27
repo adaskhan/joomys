@@ -1,5 +1,6 @@
 import json
 
+import requests
 from django.contrib.auth.decorators import login_required
 from django.core import serializers
 from django.core.serializers import serialize
@@ -15,9 +16,10 @@ from django.contrib.auth.hashers import make_password
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .forms import CompanyForm, CompanyReviewForm

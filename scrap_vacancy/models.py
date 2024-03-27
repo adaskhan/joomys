@@ -124,3 +124,43 @@ def check_words_in_title(title: str, words: list[str]):
     if title is None:
         return False
     return any(word in title.lower() for word in words)
+
+
+class Resumes(models.Model):
+    name = models.CharField(max_length=100)
+    city = models.CharField(max_length=100)
+    salary = models.CharField(max_length=100)
+    work_schedule = models.TextField()
+    education = models.TextField()
+    experience = models.TextField()
+    sex = models.CharField(max_length=10)
+    age = models.CharField(max_length=100)
+    languages = models.TextField()
+    skills = models.TextField()
+    link = models.TextField()
+    source = models.TextField(default="https://joblab.kz/search_vacancy.php?r=vac&srprofecy=&srcity=&srcategory=16")
+
+    def __str__(self):
+        return self.name
+
+
+class Experience(models.Model):
+    resume = models.ForeignKey(to=Resumes, on_delete=models.CASCADE, related_name='experiences')
+    period = models.TextField()
+    position = models.TextField()
+    company = models.TextField()
+    responsibilities = models.TextField()
+
+    def __str__(self):
+        return self.resume.name
+
+
+class Education(models.Model):
+    resume = models.ForeignKey(to=Resumes, on_delete=models.CASCADE, related_name='educations')
+    education = models.TextField()
+    graduated_year = models.TextField()
+    university = models.TextField()
+    profession = models.TextField()
+
+    def __str__(self):
+        return self.resume.name

@@ -86,6 +86,29 @@ class HHKZVacancyScrapper(VacancyScrapperBase):
         vacancies = self.extract_vacancies(data)
         return vacancies
 
+    async def find_data(self, response):
+        soup = BeautifulSoup(response.text, 'html.parser')
+        vacancies_raw = soup.find_all("div", {"class": "vacancy-serp-item__layout"})
+
+        vacancies = []
+
+        for vacancy_raw in vacancies_raw:
+            title_and_url = vacancy_raw.find("h3", {"data-qa": "bloko-header-3"}).find("a")
+            title = title_and_url.find("span", {"class": "serp-item__title"}).text.strip()
+            url = urljoin(response.url, title_and_url.get("href"))
+            city = vacancy_raw.find("div", {"data-qa": "vacancy-serp__vacancy-address"})
+            city = city.text.strip() if city else None
+            company = vacancy_raw.find("a", {"data-qa": "vacancy-serp__vacancy-employer"})
+            company = company.text.strip() if company else None
+            salary = vacancy_raw.find("span", {"data-qa": "vacancy-serp__vacancy-compensation"})
+            salary = salary.text.strip() if salary else None
+            remote = vacancy_raw.find("div", {"data-qa": "vacancy-label-remote-work-schedule"})
+            tags = "remote" if remote else None
+
+            vacancies.append(Vacancy(title=title, url=url, salary=salary, company=company, city=city, tags=tags, source=self.source, is_new=True))
+
+        return vacancies
+
     def scrap(self):
         vacancies = []
         page = 0
