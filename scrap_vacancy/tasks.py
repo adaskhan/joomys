@@ -141,6 +141,58 @@ class HHKZVacancyScrapper(VacancyScrapperBase):
         return vacancies
 
 
+class BeamKzVacancyScrapper(VacancyScrapperBase):
+
+    def __init__(self, query, log_tag, hour, minute):
+        self.query = query
+        super().__init__("https://beam.kz/vacancy/search", "beam.kz", log_tag, hour=hour, minute=minute)
+
+    def scrap_page(self, page):
+        params = {
+            'position': self.query,
+            'count': 100
+        }
+        response = requests.get(self.url_base, params=params)
+        if response.status_code == 200:
+            vacancies = self.extract_vacancies(response.text)
+            return vacancies
+
+    def extract_vacancies(self, response_text):
+        soup = BeautifulSoup(response_text, 'html.parser')
+
+        vacancies_card = soup.find('article', class_="post-card ng-star-inserted")
+
+        vacancies = []
+        for card in vacancies_card:
+            title = card.find('span', class_="entry-title").text.strip()
+            # url = item['alternate_url']
+            company = card.find('div', class_="entry-subtitle").text.strip()
+            # city = item['area']['name']
+            salary = soup.find('div', class_="entry-wrapper").text.strip()
+            if salary:
+                salary = f"{salary['from']} - {salary['to']} {salary['currency']}"
+            else:
+                salary = None
+            tags = None  # добавьте теги, если нужно
+            vacancies.append(Vacancy(title=title, url=url, salary=salary, company=company, city=city, tags=tags, source=self.source, is_new=True))
+        return vacancies
+
+    def scrap(self):
+        vacancies = []
+        page = 0
+        while True:
+            try:
+                page_vacancies = self.scrap_page(page)
+                if not page_vacancies:
+                    break
+                vacancies.extend(page_vacancies)
+                page += 1
+                time.sleep(1)
+            except Exception as e:
+                break
+        return vacancies
+
+
 class VacancyCheckerBase:
     def __init__(self, source: str):
         self.client = httpx.AsyncClient()

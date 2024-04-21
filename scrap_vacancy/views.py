@@ -488,13 +488,21 @@ class IndexAPIView(APIView):
         all_vacancies = vacancy_service.get_all_vacancies_sorted()
         top_vacancies_by_company = vacancy_service.get_top_vacancies_by_company(all_vacancies)
 
+        top_vacancies_by_company_serializer = []
+        for company, vacancies in top_vacancies_by_company.items():
+            company_vacancies_serializer = VacancySerializer(vacancies, many=True)
+            company_data = {
+                'company': company,
+                'vacancies': company_vacancies_serializer.data
+            }
+            top_vacancies_by_company_serializer.append(company_data)
+
         all_vacancies_serializer = VacancySerializer(all_vacancies, many=True)
-        top_vacancies_by_company_serializer = VacancySerializer(top_vacancies_by_company, many=True)
         top_employers_serializer = EmployerSerializer(TOP_EMPLOYERS.values(), many=True)
 
         data = {
             "top_employers": top_employers_serializer.data,  # Assuming TOP_EMPLOYERS is defined somewhere
-            "top_vacancies_by_company": top_vacancies_by_company_serializer.data,
+            "top_vacancies_by_company": top_vacancies_by_company_serializer,
             "all_vacancies": all_vacancies_serializer.data
         }
         return Response(data, status=status.HTTP_200_OK)
