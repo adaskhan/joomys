@@ -433,9 +433,6 @@ class DashboardAPIView(APIView):
 
         user_profile = UserProfile.objects.filter(user=request.user).first()
 
-        if not user_profile or not check_user_type(user_profile, 'RECRUITER'):
-            return Response({"error": "Access denied"}, status=status.HTTP_403_FORBIDDEN)
-
         serializer = UserProfileSerializer(user_profile)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

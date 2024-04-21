@@ -46,6 +46,7 @@ class VacancyScrapperBase:
         try:
             old_vacancies = Vacancy.objects.filter(source=self.source)
             old_vacancies_urls = set(vacancy.url for vacancy in old_vacancies)
+            print("call self.scrap()")
             new_vacancies = self.scrap()  # Вызываем scrap из подкласса
             new_vacancies_dict = {vacancy.url: vacancy for vacancy in new_vacancies}
             new_vacancies_urls = set(vacancy.url for vacancy in new_vacancies)
@@ -65,7 +66,11 @@ class VacancyScrapperBase:
             self._run()
 
     def run_now(self):
+        print('call _run')
         self._run()
+
+    def scrap(self):
+        raise NotImplementedError("Method 'scrap' must be implemented in subclasses")
 
 
 class HHKZVacancyScrapper(VacancyScrapperBase):
@@ -110,6 +115,7 @@ class HHKZVacancyScrapper(VacancyScrapperBase):
         return vacancies
 
     def scrap(self):
+        print("scrap in HH")
         vacancies = []
         page = 0
         while True:
@@ -147,49 +153,51 @@ class BeamKzVacancyScrapper(VacancyScrapperBase):
         self.query = query
         super().__init__("https://beam.kz/vacancy/search", "beam.kz", log_tag, hour=hour, minute=minute)
 
-    def scrap_page(self, page):
+    def scrap_page(self):
         params = {
             'position': self.query,
             'count': 100
         }
         response = requests.get(self.url_base, params=params)
         if response.status_code == 200:
-            vacancies = self.extract_vacancies(response.text)
+            print(response)
+            vacancies = self.extract_vacancies(response.text, response.url)
             return vacancies
 
-    def extract_vacancies(self, response_text):
+    def extract_vacancies(self, response_text, url):
+        print("in extract_vacancies")
         soup = BeautifulSoup(response_text, 'html.parser')
 
-        vacancies_card = soup.find('article', class_="post-card ng-star-inserted")
+        vacancies_card = soup.find_all('article', class_="post-card ng-star-inserted")
+
+        print("vcard", vacancies_card)
 
         vacancies = []
         for card in vacancies_card:
             title = card.find('span', class_="entry-title").text.strip()
-            # url = item['alternate_url']
+            print("title", title)
             company = card.find('div', class_="entry-subtitle").text.strip()
-            # city = item['area']['name']
-            salary = soup.find('div', class_="entry-wrapper").text.strip()
+            print("company", company)
+            city = card.find_all('div')[3].find_all('div')[2].text.strip()
+            print("city", city)
+            salary = card.find_all('div')[3].find_all('div')[1].text.strip()
+            print("salary", salary)
             if salary:
-                salary = f"{salary['from']} - {salary['to']} {salary['currency']}"
+                salary = salary.replace('\xa0', ' ')
             else:
                 salary = None
             tags = None  # добавьте теги, если нужно
             vacancies.append(Vacancy(title=title, url=url, salary=salary, company=company, city=city, tags=tags, source=self.source, is_new=True))
+
+        print("beam", vacancies)
         return vacancies
 
     def scrap(self):
+        print("scrap in Beam")
         vacancies = []
-        page = 0
-        while True:
-            try:
-                page_vacancies = self.scrap_page(page)
-                if not page_vacancies:
-                    break
-                vacancies.extend(page_vacancies)
-                page += 1
-                time.sleep(1)
-            except Exception as e:
-                break
+        page_vacancies = self.scrap_page()
+        vacancies.extend(page_vacancies)
+        time.sleep(1)
         return vacancies
 
 
@@ -239,6 +247,6 @@ class HHKZVacancyChecker(VacancyCheckerBase):
 @shared_task
 def scrap_now():
     from .scrappers import ALL_SCRAPPERS
-    for scrapper in ALL_SCRAPPERS:
+    for scrapper in ALL_SCRAPPERS[8:]:
         print(f"Running {scrapper.log_tag}")
         scrapper.run_now()
