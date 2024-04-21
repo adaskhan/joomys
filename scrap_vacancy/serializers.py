@@ -30,7 +30,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 class VacancySerializer(serializers.ModelSerializer):
     class Meta:
         model = Vacancy
-        fields = ['title', 'description', 'url', 'salary', 'company', 'city', 'source', 'created_by', 'created_at', 'is_new']
+        fields = '__all__'
 
 
 class EmployerSerializer(serializers.Serializer):
