@@ -165,23 +165,14 @@ class BeamKzVacancyScrapper(VacancyScrapperBase):
             return vacancies
 
     def extract_vacancies(self, response_text, url):
-        print("in extract_vacancies")
         soup = BeautifulSoup(response_text, 'html.parser')
-
         vacancies_card = soup.find_all('article', class_="post-card ng-star-inserted")
-
-        print("vcard", vacancies_card)
-
         vacancies = []
         for card in vacancies_card:
             title = card.find('span', class_="entry-title").text.strip()
-            print("title", title)
             company = card.find('div', class_="entry-subtitle").text.strip()
-            print("company", company)
             city = card.find_all('div')[3].find_all('div')[2].text.strip()
-            print("city", city)
             salary = card.find_all('div')[3].find_all('div')[1].text.strip()
-            print("salary", salary)
             if salary:
                 salary = salary.replace('\xa0', ' ')
             else:
@@ -189,11 +180,56 @@ class BeamKzVacancyScrapper(VacancyScrapperBase):
             tags = None  # добавьте теги, если нужно
             vacancies.append(Vacancy(title=title, url=url, salary=salary, company=company, city=city, tags=tags, source=self.source, is_new=True))
 
-        print("beam", vacancies)
         return vacancies
 
     def scrap(self):
-        print("scrap in Beam")
+        vacancies = []
+        page_vacancies = self.scrap_page()
+        vacancies.extend(page_vacancies)
+        time.sleep(1)
+        return vacancies
+
+
+class LinkedInVacancyScrapper(VacancyScrapperBase):
+
+    def __init__(self, query, log_tag, hour, minute):
+        self.query = query
+        super().__init__("https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search", "linkedin.kz", log_tag, hour=hour, minute=minute)
+
+    def scrap_page(self):
+        params = {
+            'keywords': self.query,
+            'count': 100,
+            'location': 'Kazakhstan'
+        }
+        response = requests.get(self.url_base, params=params)
+        if response.status_code == 200:
+            vacancies = self.extract_vacancies(response.text, response.url)
+            return vacancies
+
+    def extract_vacancies(self, response_text, url):
+        soup = BeautifulSoup(response_text, 'html.parser')
+
+        vacancies_card = soup.find_all('li')
+        vacancies = []
+        for card in vacancies_card:
+            title = card.find('h3').get_text(strip=True) if card.find('h3') else 'not-found'
+            url = card.find('a', {'class': 'base-card__full-link'})['href'] if card.find('a', {'class': 'base-card__full-link'}) else 'not-found'
+            company_card = card.find('h4')
+            if company_card and company_card.find('a'):
+                company = company_card.find('a').get_text(strip=True)
+            else:
+                company = 'not-found'
+            city = card.find('span', {'class': 'job-search-card__location'}).get_text(
+                strip=True) if card.find('span', {'class': 'job-search-card__location'}) else 'not-found'
+            salary = None
+            tags = None  # добавьте теги, если нужно
+            vacancies.append(Vacancy(title=title, url=url, salary=salary, company=company, city=city, tags=tags, source=self.source, is_new=True))
+
+        return vacancies
+
+    def scrap(self):
+        print("scrap in LinkedIn")
         vacancies = []
         page_vacancies = self.scrap_page()
         vacancies.extend(page_vacancies)
@@ -247,6 +283,6 @@ class HHKZVacancyChecker(VacancyCheckerBase):
 @shared_task
 def scrap_now():
     from .scrappers import ALL_SCRAPPERS
-    for scrapper in ALL_SCRAPPERS[8:]:
+    for scrapper in ALL_SCRAPPERS[11:]:
         print(f"Running {scrapper.log_tag}")
         scrapper.run_now()
