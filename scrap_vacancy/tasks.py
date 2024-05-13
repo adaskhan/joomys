@@ -247,6 +247,6 @@ class HHKZVacancyChecker(VacancyCheckerBase):
 @shared_task
 def scrap_now():
     from .scrappers import ALL_SCRAPPERS
-    for scrapper in ALL_SCRAPPERS[8:]:
+    for scrapper in ALL_SCRAPPERS:
         print(f"Running {scrapper.log_tag}")
         scrapper.run_now()
